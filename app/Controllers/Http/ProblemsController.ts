@@ -14,7 +14,7 @@ export default class ProblemsController {
             newProblem.level = problem.level;
             newProblem.tips = problem.tips;
 
-            if(problem.options.length != 5){
+            if(problem.options.length < 2){
                 return response.badRequest({ message: 'Number of options must be 5' })
             }  else{
                 newProblem.related('options').createMany(problem.options);
