@@ -1,5 +1,6 @@
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Player from 'App/Models/Player'
+import Level from 'App/Models/Level'
 
 export default class PlayersController {
   public async store({ request, response }: HttpContextContract) {
@@ -25,8 +26,12 @@ export default class PlayersController {
   }
   
   public async findPlayer({ request, response }: HttpContextContract) {
-    const player = await Player.findByOrFail('id', request
+    const playerFind = await Player.findByOrFail('id', request
       .param('id'))
+    
+    const level = await Level.findByOrFail('id', playerFind.player_level)
+    const player ={...playerFind.$attributes, player_rank: level.$attributes.description }
+    
     return response.ok({ player })
   }
 

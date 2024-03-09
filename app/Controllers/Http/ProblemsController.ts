@@ -81,7 +81,7 @@ export default class ProblemsController {
 
         const problems = await Database
                                 .query()
-                                .select('p.id', 'p.description', 'p.tips')
+                                .select('p.id', 'p.level', 'p.description', 'p.tips')
                                 .from('problems as p')
                                 .join('levels as l', 'l.id', 'p.level')
                                 .whereNotIn('p.id', alreadyAnsweredIds)
@@ -117,7 +117,7 @@ export default class ProblemsController {
 
         const problems = await Database
                                 .query()
-                                .select('p.id', 'p.description', 'p.tips')
+                                .select('p.id', 'p.level', 'p.description', 'p.tips')
                                 .from('problems as p')
                                 .join('levels as l', 'l.id', 'p.level')
                                 .whereNotIn('p.id', alreadyAnsweredIds)
