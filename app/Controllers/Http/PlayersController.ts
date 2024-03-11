@@ -57,6 +57,19 @@ export default class PlayersController {
     const player = await Player.findByOrFail('id', request.param('id'))
     const score = request.input('addScore')
     player.score = player.score + score
+
+    // Calc do nivel com base no score
+    // serve para ir aumento a dificuldade de se obter o proximo nivel
+    const valorInicial = 100;
+    const multiplicador = 2;
+    let nivel = 1;
+    let pontuacaoNecessaria = valorInicial;
+  
+    while (player.score >= pontuacaoNecessaria) {
+        nivel++;
+        pontuacaoNecessaria *= multiplicador;
+    }
+    player.player_level = nivel
     await player.save()
     return response.ok({ player })
   }
