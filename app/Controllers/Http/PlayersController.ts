@@ -1,6 +1,7 @@
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Player from 'App/Models/Player'
 import Level from 'App/Models/Level'
+import Database from '@ioc:Adonis/Lucid/Database';
 
 export default class PlayersController {
   public async store({ request, response }: HttpContextContract) {
@@ -41,7 +42,14 @@ export default class PlayersController {
   }
 
   public async highscore({ response }: HttpContextContract) {
-    const players = await Player.query().orderBy('score', 'desc')
+    const Highscore = await Database.rawQuery(`SELECT p.id, p.user_id, u.name, p.player_level as level, l.description as rank, p.score
+    FROM players p
+    LEFT JOIN users u ON u.id = p.user_id
+    LEFT JOIN levels l ON l.id = p.player_level
+    ORDER BY p.score DESC`)
+
+    const players = Highscore.rows
+
     return response.ok({ players })
   }
 
