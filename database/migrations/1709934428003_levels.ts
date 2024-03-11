@@ -8,6 +8,7 @@ export default class extends BaseSchema {
       // Bit-biter - Noob - Bixo - Script Kiddie - Veterano - Nerd - Try Harder - Scrum Master
       table.increments('id')
       table.string('description', 255).notNullable()
+      table.integer('level').notNullable()
     })
   }
 
