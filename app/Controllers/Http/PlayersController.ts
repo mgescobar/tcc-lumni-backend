@@ -30,7 +30,7 @@ export default class PlayersController {
     const playerFind = await Player.findByOrFail('id', request
       .param('id'))
     
-    const level = await Level.findByOrFail('id', playerFind.player_level)
+    const level = await Level.findByOrFail('level', playerFind.player_level)
     const player ={...playerFind.$attributes, player_rank: level.$attributes.description }
     
     return response.ok({ player })
@@ -45,7 +45,7 @@ export default class PlayersController {
     const Highscore = await Database.rawQuery(`SELECT p.id, p.user_id, u.name, p.player_level as level, l.description as rank, p.score
     FROM players p
     LEFT JOIN users u ON u.id = p.user_id
-    LEFT JOIN levels l ON l.id = p.player_level
+    LEFT JOIN levels l ON l.level = p.player_level
     ORDER BY p.score DESC`)
 
     const players = Highscore.rows
