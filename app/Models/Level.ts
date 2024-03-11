@@ -7,4 +7,7 @@ export default class Level extends BaseModel {
 
   @column()
   public description: string
+
+  @column()
+  public level: number
 }
