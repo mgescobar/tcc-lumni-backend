@@ -107,7 +107,8 @@ export default class DashboardController {
     const wrongAnswers = options
       .flat()
       .filter((option) => option.correct === 0).length
-    const average = (correctAnswers / (correctAnswers + wrongAnswers)) * 100
+    const average = parseFloat(((correctAnswers / (correctAnswers + wrongAnswers)) * 100).toFixed(2));
+
     
     const playerData = {...player.$attributes, correctAnswers, wrongAnswers, average }
     return response.ok(playerData)
