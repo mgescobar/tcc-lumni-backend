@@ -99,22 +99,28 @@ export default class ProblemsController {
     }
     
     public async randomByTheme({ request, response }: HttpContextContract) {
-        const alreadyAnswered = await Answer
-                                        .query()
-                                        .select('problem_id')
-                                        .where('player_id', request.param('id'));
-
-        const alreadyAnsweredIds = alreadyAnswered.map((answer) => answer.problem_id);
+        const problemsAnsweredOptions = await Database
+                                            .query()
+                                            .select('o.id', 'o.problem_id')
+                                            .from('options as o')
+                                            .join('answers as a', 'a.option_id', 'o.id')
+                                            .where('a.player_id', request.param('id'))
+                                            .where('o.correct', "1");
 
         const problems = await Database
                                 .query()
                                 .select('p.id', 'p.level', 'p.description', 'p.tips')
                                 .from('problems as p')
                                 .join('levels as l', 'l.id', 'p.level')
-                                .whereNotIn('p.id', alreadyAnsweredIds)
                                 .where('p.theme', request.param('id_theme'))
                                 .orderByRaw('RANDOM()')
                                 .limit(1);
+    
+        problemsAnsweredOptions.forEach(async (problem) => {
+            if(problem.problem_id === problems[0].id){
+                problems.pop();
+            }
+        });
 
         if(problems.length === 0){
             return response.notFound({ message: 'Não foram encontrada perguntas com esse tema para esse jogador.' })
