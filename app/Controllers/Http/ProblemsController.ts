@@ -63,31 +63,25 @@ export default class ProblemsController {
     }
 
     public async random({ request, response }: HttpContextContract) {
-        const playerLevel = await Database
-                                    .query()
-                                    .select('description')
-                                    .from('levels as l')
-                                    .join('players as p', 'p.player_level', 'l.id')
-                                    .where('p.id',request.param('id'))                                    
-
-        const levelsBetween = playerLevel[0].description.substring(0, playerLevel[0].description.indexOf(' '));        
-
-        const alreadyAnswered = await Answer
-                                        .query()
-                                        .select('problem_id')
-                                        .where('player_id', request.param('id'));
-
-        const alreadyAnsweredIds = alreadyAnswered.map((answer) => answer.problem_id);
-
         const problems = await Database
-                                .query()
-                                .select('p.id', 'p.level', 'p.description', 'p.tips')
-                                .from('problems as p')
-                                .join('levels as l', 'l.id', 'p.level')
-                                .whereNotIn('p.id', alreadyAnsweredIds)
-                                .where('l.description', 'like', `${levelsBetween}%`)
-                                .orderByRaw('RANDOM()')
-                                .limit(1);
+            .from('problems as p')
+            .select('p.id', 'p.level', 'p.description', 'p.tips')
+            .join('levels as l', 'l.id', 'p.level')
+            .whereNotIn('p.id', (builder) => {
+                builder
+                    .from('options as o')
+                    .select('o.problem_id')
+                    .join('answers as a', 'a.option_id', 'o.id')
+                    .where('a.player_id', request.param('id'))
+                    .where('o.correct', 1);
+            })
+            .orderByRaw('RANDOM()')
+            .limit(1);
+
+
+        if(problems.length === 0){
+            return response.notFound({ message: 'Não foram encontrada perguntas para esse jogador.' })
+        }
 
         const options = await Database
                                 .query()
@@ -97,30 +91,60 @@ export default class ProblemsController {
                             
         return response.ok({ problems, options })
     }
+
+    // public async random({ request, response }: HttpContextContract) {
+    //     const playerLevel = await Database
+    //                                 .query()
+    //                                 .select('description')
+    //                                 .from('levels as l')
+    //                                 .join('players as p', 'p.player_level', 'l.id')
+    //                                 .where('p.id',request.param('id'))                                    
+
+    //     const levelsBetween = playerLevel[0].description.substring(0, playerLevel[0].description.indexOf(' '));        
+
+    //     const alreadyAnswered = await Answer
+    //                                     .query()
+    //                                     .select('problem_id')
+    //                                     .where('player_id', request.param('id'));
+
+    //     const alreadyAnsweredIds = alreadyAnswered.map((answer) => answer.problem_id);
+
+    //     const problems = await Database
+    //                             .query()
+    //                             .select('p.id', 'p.level', 'p.description', 'p.tips')
+    //                             .from('problems as p')
+    //                             .join('levels as l', 'l.id', 'p.level')
+    //                             .whereNotIn('p.id', alreadyAnsweredIds)
+    //                             .where('l.description', 'like', `${levelsBetween}%`)
+    //                             .orderByRaw('RANDOM()')
+    //                             .limit(1);
+
+    //     const options = await Database
+    //                             .query()
+    //                             .select('id', 'description', 'correct')
+    //                             .from('options')
+    //                             .where('problem_id', problems[0].id);
+                            
+    //     return response.ok({ problems, options })
+    // }
     
     public async randomByTheme({ request, response }: HttpContextContract) {
-        const problemsAnsweredOptions = await Database
-                                            .query()
-                                            .select('o.id', 'o.problem_id')
-                                            .from('options as o')
-                                            .join('answers as a', 'a.option_id', 'o.id')
-                                            .where('a.player_id', request.param('id'))
-                                            .where('o.correct', "1");
-
         const problems = await Database
-                                .query()
-                                .select('p.id', 'p.level', 'p.description', 'p.tips')
-                                .from('problems as p')
-                                .join('levels as l', 'l.id', 'p.level')
-                                .where('p.theme', request.param('id_theme'))
-                                .orderByRaw('RANDOM()')
-                                .limit(1);
-    
-        problemsAnsweredOptions.forEach(async (problem) => {
-            if(problem.problem_id === problems[0].id){
-                problems.pop();
-            }
-        });
+            .from('problems as p')
+            .select('p.id', 'p.level', 'p.description', 'p.tips')
+            .join('levels as l', 'l.id', 'p.level')
+            .where('p.theme', request.param('id_theme'))
+            .whereNotIn('p.id', (builder) => {
+                builder
+                    .from('options as o')
+                    .select('o.problem_id')
+                    .join('answers as a', 'a.option_id', 'o.id')
+                    .where('a.player_id', request.param('id'))
+                    .where('o.correct', 1);
+            })
+            .orderByRaw('RANDOM()')
+            .limit(1);
+
 
         if(problems.length === 0){
             return response.notFound({ message: 'Não foram encontrada perguntas com esse tema para esse jogador.' })
