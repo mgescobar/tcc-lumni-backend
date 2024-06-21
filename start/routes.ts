@@ -44,6 +44,7 @@ Route.delete('/deleteOption/:id', 'ProblemsController.deleteOption').as('problem
 Route.get('/findProblem/:id', 'ProblemsController.findProblem').as('problems.findProblem')
 Route.get('/randomProblem/:id', 'ProblemsController.random').as('problems.random')
 Route.get('/randomProblemByTheme/:id/theme/:id_theme', 'ProblemsController.randomByTheme').as('problems.randomByTheme')
+Route.post('/findAllProblemsWithFilters', 'ProblemsController.findAllWithFilters').as('problems.findAllWithFilters')
 
 //answers
 Route.post('/answers', 'AnswersController.store').as('answers.store')
@@ -67,6 +68,10 @@ Route.get('/numberOfQuestionsByThemes', 'DashboardController.numberOfQuestionsBy
 Route.get('/answersStatsByThemes', 'DashboardController.answersStatsByThemes').as('dashboard.answersStatsByThemes')
 Route.get('/answersByPlayer/:id', 'DashboardController.answersByPlayer').as('dashboard.answersByPlayer')
 Route.get('/numberOfQuestionsByLevel', 'DashboardController.numberOfQuestionsByLevel').as('dashboard.numberOfQuestionsByLevel')
+Route.post('/numberOfAccessesByDayOfWeek', 'DashboardController.getAccessesByDayOfWeek').as('dashboard.getAccessesByDayOfWeek')
+Route.post('/performanceByQuestionLvl', 'DashboardController.statsByQuestionLvl').as('dashboard.statsByQuestionLvl')
+
+
 
 Route.get('/google/redirect', 'SessionsController.googleRedirect').as('sessions.googleRedirect')
 Route.get('/google/callback', 'SessionsController.googleCallback').as('sessions.googleCallback')

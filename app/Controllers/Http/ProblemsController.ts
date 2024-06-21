@@ -199,4 +199,38 @@ export default class ProblemsController {
                             
     //     return response.ok({ problems, options })
     // }
+
+    public async findAllWithFilters({ request, response }: HttpContextContract) {
+        const { player_id, theme } = request.only(['player_id', 'theme'])
+
+        let problemsQuery = Database.from('problems').select('*')
+
+    if (theme) {
+      problemsQuery = problemsQuery.where('theme', theme)
+    }
+
+    if (player_id) {
+      problemsQuery = problemsQuery.whereIn(
+        'id',
+        Database.from('answers').select('problem_id').where('player_id', player_id)
+      )
+    }
+
+    const problems = await problemsQuery
+
+    if (player_id) {
+      const answers = await Database
+        .from('answers')
+        .select('*')
+        .where('player_id', player_id)
+        .andWhereIn('problem_id', problems.map((p) => p.id))
+
+      problems.forEach((problem) => {
+        problem.answers = answers.filter((answer) => answer.problem_id === problem.id)
+      })
+    }
+
+    return response.json(problems)
+
+    }
 }

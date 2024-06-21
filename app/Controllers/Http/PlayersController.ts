@@ -37,8 +37,35 @@ export default class PlayersController {
   }
 
   public async findAll({ response }: HttpContextContract) {
-    const players = await Player.all()
-    return response.ok({ players })
+    const players = await Database
+      .from('players')
+      .join('users', 'players.user_id', 'users.id')
+      .select(
+        'players.id as player_id',
+        'players.user_id',
+        'players.ranking',
+        'players.score',
+        'players.player_level',
+        'players.created_at',
+        'players.updated_at',
+        'users.id as user_id',
+        'users.name as user_name'
+      )
+
+    const formattedPlayers = players.map((player) => {
+      return {
+        id: player.player_id,
+        user_id: player.user_id,
+        ranking: player.ranking,
+        score: player.score,
+        player_level: player.player_level,
+        created_at: player.created_at,
+        updated_at: player.updated_at,
+        name: player.user_name
+      }
+    })
+
+    return response.ok({ players: formattedPlayers })
   }
 
   public async highscore({ response }: HttpContextContract) {

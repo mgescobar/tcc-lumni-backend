@@ -113,4 +113,85 @@ export default class DashboardController {
     const playerData = {...player.$attributes, correctAnswers, wrongAnswers, average }
     return response.ok(playerData)
   }
+
+  public async getAccessesByDayOfWeek({ request, response }: HttpContextContract) {
+    const userId = request.input('user_id')
+
+    let query = Database
+      .from(Database.raw(`
+        (SELECT 0 AS day_of_week, 'Domingo' AS day_name UNION ALL
+         SELECT 1, 'Segunda-feira' UNION ALL
+         SELECT 2, 'Terça-feira' UNION ALL
+         SELECT 3, 'Quarta-feira' UNION ALL
+         SELECT 4, 'Quinta-feira' UNION ALL
+         SELECT 5, 'Sexta-feira' UNION ALL
+         SELECT 6, 'Sábado') as days
+      `))
+      .leftJoin('api_tokens as a', Database.raw('days.day_of_week = EXTRACT(DOW FROM a.created_at)'))
+      .select('days.day_name as day_of_week')
+      .count('a.id as count')
+      .groupBy('days.day_of_week', 'days.day_name')
+      .orderBy(Database.raw(`
+        CASE
+          WHEN days.day_of_week = 0 THEN 7
+          ELSE days.day_of_week
+        END
+      `))
+
+    if (userId) {
+      query = query.where('a.user_id', userId)
+    }
+
+    const accesses = await query
+
+    const formattedAccesses = accesses.map(access => ({
+      day_of_week: access.day_of_week,
+      count: access.count
+    }))
+
+    return response.json(formattedAccesses)
+  }
+
+  public async statsByQuestionLvl({ request, response }: HttpContextContract) {
+    const { player_id, theme, problem_id } = request.only(['player_id', 'theme', 'problem_id'])
+
+    const bindings: any = {}
+
+    let whereClause = ''
+    if (player_id) {
+      whereClause += ' AND answers.player_id = :player_id'
+      bindings.player_id = player_id
+    }
+
+    if (theme) {
+      whereClause += ' AND problems.theme = :theme'
+      bindings.theme = theme
+    }
+
+    if (problem_id) {
+      whereClause += ' AND answers.problem_id = :problem_id'
+      bindings.problem_id = problem_id
+    }
+
+    const query = `
+      SELECT 
+          CASE
+              WHEN problems.level = 1 THEN 'Fácil'
+              WHEN problems.level = 2 THEN 'Intermediário'
+              WHEN problems.level = 3 THEN 'Difícil'
+          END AS "Dificuldade",
+          SUM(CASE WHEN options.correct = 1 THEN 1 ELSE 0 END) AS "Corretas",
+          SUM(CASE WHEN options.correct = 0 THEN 1 ELSE 0 END) AS "Incorretas",
+          ROUND(AVG(answers.used_time)) AS "Tempo Médio"
+      FROM answers
+      JOIN problems ON answers.problem_id = problems.id
+      JOIN options ON answers.option_id = options.id
+      WHERE 1=1 ${whereClause}
+      GROUP BY problems.level;
+    `
+
+    const stats = await Database.rawQuery(query, bindings)
+
+    return response.json(stats.rows)
+  }
 }
