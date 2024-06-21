@@ -145,8 +145,8 @@ export default class DashboardController {
     const accesses = await query
 
     const formattedAccesses = accesses.map(access => ({
-      day_of_week: access.day_of_week,
-      count: access.count
+      "Dia da semana": access.day_of_week,
+      "Número de acessos": Number(access.count)
     }))
 
     return response.json(formattedAccesses)
@@ -180,18 +180,26 @@ export default class DashboardController {
               WHEN problems.level = 2 THEN 'Intermediário'
               WHEN problems.level = 3 THEN 'Difícil'
           END AS "Dificuldade",
-          SUM(CASE WHEN options.correct = 1 THEN 1 ELSE 0 END) AS "Corretas",
-          SUM(CASE WHEN options.correct = 0 THEN 1 ELSE 0 END) AS "Incorretas",
-          ROUND(AVG(answers.used_time)) AS "Tempo Médio"
+          SUM(CASE WHEN options.correct = 1 THEN 1 ELSE 0 END) AS "Acertos",
+          SUM(CASE WHEN options.correct = 0 THEN 1 ELSE 0 END) AS "Erros",
+          ROUND(AVG(answers.used_time)) AS "Tempo Médio (segundos)"
       FROM answers
       JOIN problems ON answers.problem_id = problems.id
       JOIN options ON answers.option_id = options.id
       WHERE 1=1 ${whereClause}
-      GROUP BY problems.level;
+      GROUP BY problems.level
+      ORDER BY problems.level DESC;
     `
 
     const stats = await Database.rawQuery(query, bindings)
 
-    return response.json(stats.rows)
+    const formattedStats = stats.rows.map(row => ({
+      ...row,
+      'Acertos': parseInt(row['Acertos']),
+      'Erros': parseInt(row['Erros']),
+      'Tempo Médio (segundos)': parseFloat(row['Tempo Médio (segundos)'])
+    }))
+
+    return response.json(formattedStats)
   }
 }

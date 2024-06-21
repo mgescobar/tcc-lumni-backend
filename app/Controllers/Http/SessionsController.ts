@@ -1,6 +1,7 @@
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import User from 'App/Models/User'
 import Hash from '@ioc:Adonis/Core/Hash'
+import Player from 'App/Models/Player'
 
 export default class SessionsController {
   public async store ({ auth, request, response }: HttpContextContract) {
@@ -10,7 +11,9 @@ export default class SessionsController {
       expiresIn: '2hours',
     })
 
-    return response.created({ user: auth.use('api').user, token})
+    const player = await Player.findBy('user_id', auth.use('api').user?.id)
+
+    return response.created({ user: auth.use('api').user, token, player })
   }
 
   public async destroy ({ auth, response }: HttpContextContract) {
