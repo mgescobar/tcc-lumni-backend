@@ -70,6 +70,8 @@ Route.get('/answersByPlayer/:id', 'DashboardController.answersByPlayer').as('das
 Route.get('/numberOfQuestionsByLevel', 'DashboardController.numberOfQuestionsByLevel').as('dashboard.numberOfQuestionsByLevel')
 Route.post('/numberOfAccessesByDayOfWeek', 'DashboardController.getAccessesByDayOfWeek').as('dashboard.getAccessesByDayOfWeek')
 Route.post('/performanceByQuestionLvl', 'DashboardController.statsByQuestionLvl').as('dashboard.statsByQuestionLvl')
+Route.post('/generalStats', 'DashboardController.getGeneralStats').as('dashboard.getGeneralStats')
+Route.post('/gamePerformance', 'DashboardController.getGamePerformance').as('dashboard.getGamePerformance')
 
 
 

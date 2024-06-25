@@ -2,6 +2,8 @@ import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Option from 'App/Models/Option'
 import Answer from 'App/Models/Answer'  
 import Player from 'App/Models/Player'
+import User from 'App/Models/User'
+import Level from 'App/Models/Level'
 import Database from '@ioc:Adonis/Lucid/Database'
 export default class DashboardController {
   public async numberOfQuestionsByThemes({ response }: HttpContextContract) {
@@ -201,5 +203,143 @@ export default class DashboardController {
     }))
 
     return response.json(formattedStats)
+  }
+
+  public async getGeneralStats({ request }: HttpContextContract) {
+    const { player_id, theme, problem_id } = request.only(['player_id', 'theme', 'problem_id'])
+    
+    const problemQuery = Database
+      .from('problems')
+      .select('problems.id', 'problems.theme')
+
+    if (theme !== 0) {
+      problemQuery.where('problems.theme', theme)
+    }
+
+    if (problem_id) {
+      problemQuery.andWhere('problems.id', problem_id)
+    }
+
+    const problems = await problemQuery
+
+    if (problems.length === 0) {
+      const themeName = this.getThemeName(theme)
+      return {
+        name: themeName,
+        registradas: 0,
+        respondidas: 0,
+        correct: 0,
+        incorrect: 0,
+        fill: theme === 0 ? '#888888' : theme === 1 ? '#0088FE' : '#00C49F'
+      }
+    }
+
+    const problemIds = problems.map((problem) => problem.id)
+
+    const registeredCount = problemIds.length
+
+    const answersQuery = Database
+      .from('answers')
+      .whereIn('problem_id', problemIds)
+
+    if (player_id) {
+      answersQuery.andWhere('answers.player_id', player_id)
+    }
+
+    const answers = await answersQuery.select('answers.problem_id', 'answers.option_id')
+
+    const answeredCount = answers.length
+
+    const correctAnswers = await Database
+      .from('options')
+      .whereIn('id', answers.map((answer) => answer.option_id))
+      .andWhere('correct', 1)
+
+    const correctCount = correctAnswers.length
+    const incorrectCount = answeredCount - correctCount
+
+    const fillColor = theme === 0 ? '#888888' : theme === 1 ? '#0088FE' : '#00C49F' 
+
+    const response = {
+      tema: this.getThemeName(theme),
+      registradas: registeredCount,
+      respondidas: answeredCount,
+      corretas: correctCount,
+      incorretas: incorrectCount,
+      fill: fillColor
+    }
+
+    return response
+  }
+
+  private getThemeName(theme: number): string {
+    switch (theme) {
+      case 1:
+        return 'Scrum'
+      case 2:
+        return 'XP'
+      default:
+        return theme === 0 ? 'Todos os temas' : theme.toString()
+    }
+  }
+
+  public async getGamePerformance({ request, response }: HttpContextContract) {
+    const { player_id } = request.only(['player_id'])
+  
+    if (player_id === 0) {
+      const allAnswers = await Database
+        .from('answers')
+        .innerJoin('options', 'answers.option_id', 'options.id')
+        .select('options.correct')
+  
+      const totalCorrectAnswers = allAnswers.filter(answer => answer.correct).length
+      const totalIncorrectAnswers = allAnswers.filter(answer => !answer.correct).length
+      const totalAllAnswers = totalCorrectAnswers + totalIncorrectAnswers
+  
+      const classPerformance = totalAllAnswers ? (totalCorrectAnswers / totalAllAnswers) * 100 : 0
+  
+      const averageLevel = await Database
+        .from('players')
+        .avg('player_level as avg_level')
+        .first()
+
+      const rank = await Database
+        .from('levels')
+        .where('level', Math.ceil(averageLevel?.avg_level) || 0)
+        .select('description')
+  
+      return response.json({
+        nome: 'Todos os jogadores',
+        desempenho: Math.ceil(classPerformance),
+        rank: rank[0].description,
+        level: Math.ceil(averageLevel?.avg_level) || 0,
+      })
+    } else {
+      const playerAnswers = await Database
+        .from('answers')
+        .innerJoin('options', 'answers.option_id', 'options.id')
+        .where('answers.player_id', player_id)
+        .select('options.correct')
+  
+      const correctAnswers = playerAnswers.filter(answer => answer.correct).length
+      const incorrectAnswers = playerAnswers.filter(answer => !answer.correct).length
+      const totalAnswers = correctAnswers + incorrectAnswers
+  
+      const playerPerformance = totalAnswers ? (correctAnswers / totalAnswers) * 100 : 0
+  
+      const player = await Player.find(player_id)
+      const user = player ? await User.find(player.user_id) : null
+      const level = player ? await Level.find(player.player_level) : null
+  
+      return response.json({
+        nome: user?.name,
+        desempenho: Math.ceil(playerPerformance),
+        rank: level?.description,
+        level: player?.player_level
+      })
+    }
+
+
+  
   }
 }
