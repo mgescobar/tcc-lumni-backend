@@ -266,6 +266,7 @@ export default class DashboardController {
       respondidas: answeredCount,
       corretas: correctCount,
       incorretas: incorrectCount,
+      porcentagem: parseFloat(((correctCount / answeredCount) * 100).toFixed(2)),
       fill: fillColor
     }
 
@@ -285,8 +286,7 @@ export default class DashboardController {
 
   public async getGamePerformance({ request, response }: HttpContextContract) {
     const { player_id } = request.only(['player_id'])
-  
-    if (player_id === 0) {
+    if (player_id === 0 || player_id === null || player_id === undefined) {
       const allAnswers = await Database
         .from('answers')
         .innerJoin('options', 'answers.option_id', 'options.id')
