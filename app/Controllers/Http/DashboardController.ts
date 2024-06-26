@@ -330,16 +330,24 @@ export default class DashboardController {
       const player = await Player.find(player_id)
       const user = player ? await User.find(player.user_id) : null
       const level = player ? await Level.find(player.player_level) : null
+
+      const Highscore = await Database.rawQuery(`SELECT p.id, p.user_id, u.name, p.player_level as level, l.description as rank, p.score
+        FROM players p
+        LEFT JOIN users u ON u.id = p.user_id
+        LEFT JOIN levels l ON l.level = p.player_level
+        ORDER BY p.score DESC`)
+    
+      const players = Highscore.rows
+
+      const playerIndex = players.findIndex((p) => p.id === player_id)+1
   
       return response.json({
         nome: user?.name,
         desempenho: Math.ceil(playerPerformance),
         rank: level?.description,
-        level: player?.player_level
+        level: player?.player_level,
+        posicao_placar: playerIndex
       })
     }
-
-
-  
   }
 }
