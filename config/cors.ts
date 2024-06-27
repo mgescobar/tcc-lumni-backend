@@ -46,9 +46,8 @@ const corsConfig: CorsConfig = {
   */
   origin: [
     'http://localhost:3000',
-    'https://lumnifront.vercel.app',
-    'https://lumnifront-git-main-henriquerl55.vercel.app',
-    'https://lumnifront-henriquerl55.vercel.app',
+    'http://localhost:3001',
+    'https://tcc-lumni-frontend-ae7825a9dd11.herokuapp.com',
   ],
 
   /*
