@@ -311,7 +311,7 @@ export default class DashboardController {
       return response.json({
         nome: 'Todos os jogadores',
         desempenho: Math.ceil(classPerformance),
-        rank: rank[0].description,
+        rank: rank[0]?.description,
         level: Math.ceil(averageLevel?.avg_level) || 0,
       })
     } else {
