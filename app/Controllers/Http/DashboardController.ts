@@ -264,6 +264,10 @@ export default class DashboardController {
   
       const correctCount = correctAnswers.length
       const incorrectCount = answeredCount - correctCount
+      let percent = parseFloat(((correctCount / answeredCount) * 100).toFixed(2));
+      if (isNaN(percent)) {
+        percent = 0
+      }
   
       results.push({
         tema: this.getThemeName(theme),
@@ -271,7 +275,7 @@ export default class DashboardController {
         respondidas: answeredCount,
         corretas: correctCount,
         incorretas: incorrectCount,
-        porcentagem: parseFloat(((correctCount / answeredCount) * 100).toFixed(2)),
+        porcentagem: percent,
         fill: this.getThemeFillColor(theme)
       })
     }
