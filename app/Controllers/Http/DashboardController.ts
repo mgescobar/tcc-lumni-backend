@@ -208,71 +208,77 @@ export default class DashboardController {
   public async getGeneralStats({ request }: HttpContextContract) {
     const { player_id, theme, problem_id } = request.only(['player_id', 'theme', 'problem_id'])
     
-    const problemQuery = Database
-      .from('problems')
-      .select('problems.id', 'problems.theme')
-
-    if (theme !== 0) {
-      problemQuery.where('problems.theme', theme)
-    }
-
-    if (problem_id) {
-      problemQuery.andWhere('problems.id', problem_id)
-    }
-
-    const problems = await problemQuery
-
-    if (problems.length === 0) {
-      const themeName = this.getThemeName(theme)
-      return {
-        name: themeName,
-        registradas: 0,
-        respondidas: 0,
-        correct: 0,
-        incorrect: 0,
-        fill: theme === 0 ? '#888888' : theme === 1 ? '#0088FE' : '#00C49F'
+    const themesToProcess = theme === 0 ? [1, 2] : [theme]
+  
+    const results = []
+  
+    for (const theme of themesToProcess) {
+      const problemQuery = Database
+        .from('problems')
+        .select('problems.id', 'problems.theme')
+  
+      if (theme !== 0) {
+        problemQuery.where('problems.theme', theme)
       }
+  
+      if (problem_id) {
+        problemQuery.andWhere('problems.id', problem_id)
+      }
+  
+      const problems = await problemQuery
+  
+      if (problems.length === 0) {
+        const themeName = this.getThemeName(theme)
+        results.push({
+          tema: themeName,
+          registradas: 0,
+          respondidas: 0,
+          corretas: 0,
+          incorretas: 0,
+          porcentagem: 0,
+          fill: this.getThemeFillColor(theme)
+        })
+        continue
+      }
+  
+      const problemIds = problems.map((problem) => problem.id)
+  
+      const registeredCount = problemIds.length
+  
+      const answersQuery = Database
+        .from('answers')
+        .whereIn('problem_id', problemIds)
+  
+      if (player_id) {
+        answersQuery.andWhere('answers.player_id', player_id)
+      }
+  
+      const answers = await answersQuery.select('answers.problem_id', 'answers.option_id')
+  
+      const answeredCount = answers.length
+  
+      const correctAnswers = await Database
+        .from('options')
+        .whereIn('id', answers.map((answer) => answer.option_id))
+        .andWhere('correct', 1)
+  
+      const correctCount = correctAnswers.length
+      const incorrectCount = answeredCount - correctCount
+  
+      results.push({
+        tema: this.getThemeName(theme),
+        registradas: registeredCount,
+        respondidas: answeredCount,
+        corretas: correctCount,
+        incorretas: incorrectCount,
+        porcentagem: parseFloat(((correctCount / answeredCount) * 100).toFixed(2)),
+        fill: this.getThemeFillColor(theme)
+      })
     }
-
-    const problemIds = problems.map((problem) => problem.id)
-
-    const registeredCount = problemIds.length
-
-    const answersQuery = Database
-      .from('answers')
-      .whereIn('problem_id', problemIds)
-
-    if (player_id) {
-      answersQuery.andWhere('answers.player_id', player_id)
-    }
-
-    const answers = await answersQuery.select('answers.problem_id', 'answers.option_id')
-
-    const answeredCount = answers.length
-
-    const correctAnswers = await Database
-      .from('options')
-      .whereIn('id', answers.map((answer) => answer.option_id))
-      .andWhere('correct', 1)
-
-    const correctCount = correctAnswers.length
-    const incorrectCount = answeredCount - correctCount
-
-    const fillColor = theme === 0 ? '#888888' : theme === 1 ? '#0088FE' : '#00C49F' 
-
-    const response = {
-      tema: this.getThemeName(theme),
-      registradas: registeredCount,
-      respondidas: answeredCount,
-      corretas: correctCount,
-      incorretas: incorrectCount,
-      porcentagem: parseFloat(((correctCount / answeredCount) * 100).toFixed(2)),
-      fill: fillColor
-    }
-
-    return response
+  
+    return results
   }
-
+  
   private getThemeName(theme: number): string {
     switch (theme) {
       case 1:
@@ -283,6 +289,18 @@ export default class DashboardController {
         return theme === 0 ? 'Todos os temas' : theme.toString()
     }
   }
+  
+  private getThemeFillColor(theme: number): string {
+    switch (theme) {
+      case 1:
+        return '#0088FE'
+      case 2:
+        return '#00C49F'
+      default:
+        return '#888888'
+    }
+  }
+  
 
   public async getGamePerformance({ request, response }: HttpContextContract) {
     const { player_id } = request.only(['player_id'])
