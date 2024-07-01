@@ -6,22 +6,31 @@ import Answer from 'App/Models/Answer';
 
 export default class ProblemsController {
     public async store({ request, response }: HttpContextContract) {
-        const problemsList = request.input("problems");
-        problemsList.forEach(problem => {
+        let problemsList = request.input("problemsList");
+    
+        if (!Array.isArray(problemsList)) {
+            problemsList = [problemsList];
+        }
+    
+        if (!problemsList || !Array.isArray(problemsList)) {
+            return response.badRequest({ message: 'Invalid problemsList format' });
+        }
+    
+        for (const problem of problemsList) {
             const newProblem = new Problem();
             newProblem.description = problem.description;
             newProblem.theme = problem.theme;
             newProblem.level = problem.level;
             newProblem.tips = problem.tips;
-
-            if(problem.options.length < 2){
-                return response.badRequest({ message: 'Number of options must be 5' })
-            }  else{
-                newProblem.related('options').createMany(problem.options);
+    
+            if (problem.options.length < 2) {
+                return response.badRequest({ message: 'Number of options must be at least 2' });
+            } else {
+                await newProblem.related('options').createMany(problem.options);
             }
-        });
-
-        return response.ok({ problemsList })
+        }
+    
+        return response.ok({ problemsList });
     }
     
     public async update({ request, response }: HttpContextContract) {

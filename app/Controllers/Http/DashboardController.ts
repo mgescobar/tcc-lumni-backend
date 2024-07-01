@@ -179,7 +179,7 @@ export default class DashboardController {
       SELECT 
           CASE
               WHEN problems.level = 1 THEN 'Fácil'
-              WHEN problems.level = 2 THEN 'Intermediário'
+              WHEN problems.level = 2 THEN 'Média'
               WHEN problems.level = 3 THEN 'Difícil'
           END AS "Dificuldade",
           SUM(CASE WHEN options.correct = 1 THEN 1 ELSE 0 END) AS "Acertos",
