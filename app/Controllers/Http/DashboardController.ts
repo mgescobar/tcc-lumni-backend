@@ -130,6 +130,7 @@ export default class DashboardController {
          SELECT 6, 'Sábado') as days
       `))
       .leftJoin('api_tokens as a', Database.raw('days.day_of_week = EXTRACT(DOW FROM a.created_at)'))
+      .leftJoin('players as p', 'a.user_id', 'p.user_id')
       .select('days.day_name as day_of_week')
       .count('a.id as count')
       .groupBy('days.day_of_week', 'days.day_name')
@@ -143,6 +144,8 @@ export default class DashboardController {
     if (userId) {
       query = query.where('a.user_id', userId)
     }
+
+    query = query.whereNotNull('p.id')
 
     const accesses = await query
 
